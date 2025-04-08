@@ -412,88 +412,6 @@ class Font {
   }
 }
 
-class Music {
-  constructor(path, loop = false) {
-    this.path = path;
-    this.audio = new Audio(path);
-    this.audio.loop = loop;
-  }
-
-  play() {
-    this.audio.play();
-  }
-
-  pause() {
-    this.audio.pause();
-  }
-
-  isPlaying() {
-    return !this.audio.paused;
-  }
-}
-
-class Texture {
-  constructor(path) {
-    this.path = path;
-    this.loaded = false;
-    this.image = new Image();
-  }
-
-  async load(path) {
-    this.image.src = path;
-    await this.image.decode();
-    this.loaded = true;
-  }
-
-  getWidth() {
-    return this.image.width;
-  }
-
-  getHeight() {
-    return this.image.height;
-  }
-}
-
-class Sprite {
-  #width;
-  #height;
-
-  constructor(texture, x, y, width, height) {
-    this.texture = texture;
-    this.x = x;
-    this.y = y;
-    this.#width = width ?? texture.image.width;
-    this.#height = height ?? texture.image.height;
-  }
-
-  setPosition(x, y) {
-    this.x = x;
-    this.y = y;
-  }
-
-  setX(x) {
-    this.x = x;
-  }
-
-  setY(y) {
-    this.y = y;
-  }
-
-  getWidth() {
-    return this.#width;
-  }
-
-  getHeight() {
-    return this.#height;
-  }
-
-  draw() {
-    if (this.texture.loaded) {
-      __2djs.ctx.drawImage(this.texture.image, this.x, this.y, this.#width, this.#height);
-    }
-  }
-}
-
 //#endregion Hilfsklassen
 
 //#region Globale Variablen
@@ -1346,10 +1264,6 @@ function frameRate(fps) {
     return;
   }
   __2djs.frameRate = fps;
-  if (!__2djs.intervalId) {
-    return;
-  }
-  __2djs.frameRate = fps;
   __2djs.frameInterval = 1000 / fps;
 }
 
@@ -2171,6 +2085,53 @@ function cos(value) {
   return Math.cos(value);
 }
 
+/**
+ * Diese Funktion prüft, ob zwei Rechtecke miteinander kollidieren, also ob sie sich an irgendeiner Stelle berühren oder überlappen. Jedes Rechteck wird durch seine Position (wo es auf der Leinwand erscheint) und seine Größe (wie groß es ist) definiert. 
+ * Die Funktion prüft, ob die rechte Seite des ersten Rechtecks die linke Seite des zweiten Rechtecks schneidet und umgekehrt. Ebenso wird überprüft, ob die untere Seite des ersten Rechtecks die obere Seite des zweiten Rechtecks überschreitet und umgekehrt.
+ * Wenn die Rechtecke irgendwo miteinander überlappen, gibt die Funktion `true` zurück, andernfalls gibt sie `false` zurück.
+ *
+ * Die Rechtecke werden dabei durch folgende Werte beschrieben:
+ * - `x` und `y`: Diese Werte beschreiben die Position des Rechtecks auf der Leinwand. Sie beziehen sich auf die obere linke Ecke des Rechtecks.
+ * - `w` und `h`: Diese Werte beschreiben die Größe des Rechtecks, also die Breite (`w`) und die Höhe (`h`).
+ *
+ * @param {number} x1 - Die X-Position des ersten Rechtecks (die horizontale Position der oberen linken Ecke).
+ * @param {number} y1 - Die Y-Position des ersten Rechtecks (die vertikale Position der oberen linken Ecke).
+ * @param {number} w1 - Die Breite des ersten Rechtecks (wie breit das Rechteck ist).
+ * @param {number} h1 - Die Höhe des ersten Rechtecks (wie hoch das Rechteck ist).
+ * @param {number} x2 - Die X-Position des zweiten Rechtecks.
+ * @param {number} y2 - Die Y-Position des zweiten Rechtecks.
+ * @param {number} w2 - Die Breite des zweiten Rechtecks.
+ * @param {number} h2 - Die Höhe des zweiten Rechtecks.
+ * @returns {boolean} Gibt `true` zurück, wenn die beiden Rechtecke kollidieren (überlappen), andernfalls `false`.
+ *
+ * @example
+ * // Beispiel: Prüft, ob sich zwei Rechtecke überlappen
+ * const collision = checkRectCollision(10, 10, 50, 50, 30, 30, 50, 50);
+ * console.log(collision); // Gibt `true` aus, weil sich die Rechtecke überschneiden.
+ *
+ * // Beispiel ohne Kollision
+ * const collisionNoOverlap = checkRectCollision(10, 10, 50, 50, 100, 100, 50, 50);
+ * console.log(collisionNoOverlap); // Gibt `false` aus, weil die Rechtecke nicht überlappen.
+ */
+function rectCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+  return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+}
+
+/**
+ * Lädt eine Audiodatei und gibt ein Audio-Objekt zurück.
+ *
+ * Diese Funktion erstellt ein neues Audio-Objekt mit der angegebenen Datei und setzt einige grundlegende Eigenschaften wie Lautstärke und Wiederholungsmodus.
+ * Das Audio-Objekt kann später abgespielt werden. Zum abspielen des Audios kann die Funktion {@linkcode playMusic} verwendet werden.
+ *
+ * @param {string} path - Der Pfad zur Audiodatei, die geladen werden soll.
+ * @param {boolean} [loop=false] - Ein optionaler Parameter, der angibt, ob das Audio in einer Schleife wiederholt werden soll (Standardwert ist `false`).
+ * @returns {HTMLAudioElement} Das geladene Audio-Objekt, das zur Wiedergabe verwendet werden kann.
+ *
+ * @example
+ * // Lädt eine Musikdatei und spielt sie in einer Schleife ab
+ * const music = loadMusic('background-music.mp3', true);
+ * playMusic(music);
+ */
 function loadMusic(path, loop = false) {
   const audio = new Audio(path);
   audio.volume = 0.5;
@@ -2178,10 +2139,37 @@ function loadMusic(path, loop = false) {
   return audio;
 }
 
+/**
+ * Spielt eine Audiodatei ab.
+ *
+ * Diese Funktion startet die Wiedergabe einer gegebenen Audiodatei, die als `HTMLAudioElement` übergeben wird.
+ * Sie setzt voraus, dass die Audiodatei bereits geladen wurde.
+ *
+ * @param {HTMLAudioElement} audio - Das Audio-Objekt, das abgespielt werden soll. Dieses Objekt sollte vorher mit der Funktion {@linkcode loadMusic} oder einer ähnlichen Methode geladen worden sein.
+ *
+ * @example
+ * // Spielt die zuvor geladene Musik ab
+ * const music = loadMusic('background-music.mp3');
+ * playMusic(music);
+ */
 function playMusic(audio) {
   audio.play();
 }
 
+/**
+ * Pausiert die Wiedergabe einer Audiodatei.
+ *
+ * Diese Funktion setzt die Wiedergabe einer gegebenen Audiodatei aus, die als `HTMLAudioElement` übergeben wird.
+ * Die Audiodatei kann später mit der Funktion {@linkcode playMusic} oder einer ähnlichen Methode fortgesetzt werden.
+ *
+ * @param {HTMLAudioElement} audio - Das Audio-Objekt, dessen Wiedergabe pausiert werden soll. Dieses Objekt sollte vorher mit der Funktion {@linkcode loadMusic} oder einer ähnlichen Methode geladen worden sein.
+ *
+ * @example
+ * // Pausiert die zuvor abgespielte Musik
+ * const music = loadMusic('background-music.mp3');
+ * playMusic(music);
+ * pauseMusic(music);
+ */
 function pauseMusic(audio) {
   audio.pause();
 }
